@@ -144,7 +144,7 @@ def subdomain_worker(conn, k, cfg):
 # --------------------------------------------------------------------------
 # Driver: spawn K persistent workers, run Schwarz rounds in true parallel.
 # --------------------------------------------------------------------------
-def run_dd_mp(prob="sin1", K=4, overlap=0.2, width=32, n_iter=15,
+def run_dd_mp(prob="sin1", K=2, overlap=0.2, width=32, n_iter=15,
               steps_per=400, n_col=256, lr=1e-3, alpha=1.0,
               n_eval=400, verbose=True):
     p = PROBLEMS[prob]
@@ -272,7 +272,7 @@ def run_vanilla(prob="sin4", width=47, steps=6000, n_col=256, lr=1e-3):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--prob", default="sin4", choices=list(PROBLEMS))
-    ap.add_argument("--Ks", default="2,4,8", help="comma list of #subdomains")
+    ap.add_argument("--Ks", default="2", help="comma list of #subdomains")
     ap.add_argument("--iters", type=int, default=15)
     ap.add_argument("--steps", type=int, default=400)
     ap.add_argument("--width", type=int, default=32)

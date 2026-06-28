@@ -38,24 +38,18 @@ scale.
 
 ```
 Phase1_PINN_1D/
-  pinn_1D_vs_dd.ipynb        # Vanilla PINN vs DD-PINN on 1D Poisson (self-contained, executed)
   dd_parallel_mp.py          # TRUE-parallel K-subdomain DD (torch.multiprocessing)
-  pinn_1D_vs_dd_*.png        # solution / convergence figures
-  pinn_1D_parallel_scaling.png
 Phase2_PINN_2D/
-  pinn_2D_vs_dd.ipynb        # Vanilla PINN vs DD-PINN on 2D Poisson (self-contained, executed)
   dd_parallel_mp_2d.py       # TRUE-parallel K-strip DD (torch.multiprocessing)
-  pinn_2D_vs_dd_*.png
-Phase3_PINN_3D/
-  pinn_3d_LPB.ipynb          # 3D PINN toward the Linearized Poisson–Boltzmann model
 References/                  # key reference papers
 README.md
 ```
 
-Each Phase-1/2 notebook is **self-contained and fully executed**: it implements
-both methods from scratch, runs them under matched capacity and a matched
-optimization budget, and prints the **real measured** results — no cached or
-hand-edited numbers.
+Each script is **self-contained**: it implements vanilla PINN and DD-PINN from
+scratch, runs them under matched capacity and a matched optimization budget, and
+prints the **real measured** results — no cached or hand-edited numbers. The
+domain is split into `K` overlapping subdomains, one OS process per subdomain;
+`K` defaults to **2**.
 
 ---
 
@@ -232,15 +226,13 @@ overhead.
 
 The project runs on **CPU** (for these small networks the CPU beats MPS/GPU —
 kernel-launch overhead dominates for tiny tensors). PyTorch is installed under
-**Python 3.13** (Jupyter kernel `dd-ann-py313`).
+**Python 3.13**.
 
 ```bash
-# notebooks
-jupyter lab          # open Phase1_PINN_1D/pinn_1D_vs_dd.ipynb etc. with kernel dd-ann-py313
-
-# true-parallel scaling benchmarks (run as scripts, NOT inside the notebook)
-python3.13 Phase1_PINN_1D/dd_parallel_mp.py     --prob sin4  --Ks 2,4,8
-python3.13 Phase2_PINN_2D/dd_parallel_mp_2d.py  --prob sin13 --Ks 2,4
+# true-parallel benchmarks (run as scripts; spawn-based MP must not be
+# launched from inside a notebook). K defaults to 2; override with --Ks.
+python3.13 Phase1_PINN_1D/dd_parallel_mp.py     --prob sin4  --Ks 2
+python3.13 Phase2_PINN_2D/dd_parallel_mp_2d.py  --prob sin13 --Ks 2
 ```
 
 The `.py` benchmarks print a `K · L2 · seq · par · speed-up` table for the

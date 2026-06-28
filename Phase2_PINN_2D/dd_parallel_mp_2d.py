@@ -16,7 +16,7 @@ Interface coupling is the SOFT transmission penalty used in the 2D notebook:
 each strip matches its neighbour's frozen profile on the shared line x=const.
 
 Run:
-    python3.13 dd_parallel_mp_2d.py --prob sin13 --Ks 2,4
+    python3.13 dd_parallel_mp_2d.py --prob sin13 --Ks 2
 """
 import argparse
 import time
@@ -271,7 +271,7 @@ def run_vanilla_2d(prob="sin13", layers=(2, 64, 64, 64, 1), epochs=4500,
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--prob", default="sin13", choices=list(PROBLEMS))
-    ap.add_argument("--Ks", default="2,4")
+    ap.add_argument("--Ks", default="2")
     ap.add_argument("--iters", type=int, default=12)
     ap.add_argument("--steps", type=int, default=400)
     ap.add_argument("--vs-vanilla", action="store_true",
