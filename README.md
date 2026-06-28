@@ -74,9 +74,9 @@ the Schwarz iteration converges **geometrically — faster with larger overlap**
 
 ---
 
-## Results (real, reproduced in the notebooks)
+## Results (real, reproduced by the scripts)
 
-All numbers are measured by the notebooks on CPU, under matched network capacity
+All numbers are measured by the scripts on CPU, under matched network capacity
 and a matched optimization budget.
 
 ### 1D Poisson  −u″ = f on [0,1]
@@ -97,9 +97,6 @@ subdomain sees a lower effective frequency). The DD times here are **single-proc
 (both subdomains trained on one core, so naturally ~2× vanilla); the **real measured
 parallel** times are in the [next section](#real-parallel-execution-measured-not-inferred).
 
-![1D solutions](Phase1_PINN_1D/pinn_1D_vs_dd_solutions.png)
-![1D convergence and timing](Phase1_PINN_1D/pinn_1D_vs_dd_convergence.png)
-
 ### 2D Poisson  −Δu = f on [0,1]²
 
 One `2-64-64-64-1` network vs. two `2-64-64-1` strips (≈8.6k vs ≈8.8k params),
@@ -113,10 +110,6 @@ One `2-64-64-64-1` network vs. two `2-64-64-1` strips (≈8.6k vs ≈8.8k params
 DD reproduces the global PINN's accuracy while each strip is half the domain and
 independent. Times here are **single-process**; the **real measured parallel**
 speed-up is in the next section.
-
-![2D fields — sin(πx)sin(πy)](Phase2_PINN_2D/pinn_2D_vs_dd_11.png)
-![2D fields — sin(πx)sin(3πy)](Phase2_PINN_2D/pinn_2D_vs_dd_13.png)
-![2D convergence and timing](Phase2_PINN_2D/pinn_2D_vs_dd_convergence.png)
 
 ---
 
@@ -161,8 +154,6 @@ core chip.
 | 2 | 5.2e-01 | 17.0 | 11.8 | **1.43×** |
 | 4 | 3.3e-01 | 32.3 | 14.2 | **2.28×** |
 | 8 | 3.7e-01 | 66.1 | 29.8 | **2.22×** |
-
-![1D parallel scaling](Phase1_PINN_1D/pinn_1D_parallel_scaling.png)
 
 Two effects appear together, exactly as the method predicts: the **accuracy
 improves with K** on the high-frequency problem (5.2e-01 → 3.3e-01 from K=2→4),
@@ -247,8 +238,7 @@ not be launched from a notebook cell that *defines* the worker.)
 |-------|------|--------|
 | Phase 1 | PINN vs DD-PINN on 1D PDEs + true-parallel scaling | ✅ Complete |
 | Phase 2 | PINN vs DD-PINN on 2D PDEs + true-parallel scaling | ✅ Complete |
-| Phase 3 | 3D PINN / Linearized Poisson–Boltzmann | 🔄 In progress |
-| Next | Asynchronous/additive Schwarz (remove the round barrier); cluster scaling; LPB / COSMO | ⏳ Upcoming |
+| Next | Asynchronous/additive Schwarz (remove the round barrier); cluster scaling; 3D PINN; LPB / COSMO | ⏳ Upcoming |
 
 ---
 
@@ -268,7 +258,7 @@ not be launched from a notebook cell that *defines* the worker.)
 
 ## Tech stack
 
-Python · PyTorch · NumPy · Pandas · Matplotlib · Jupyter · `torch.multiprocessing`
+Python · PyTorch · NumPy · `torch.multiprocessing`
 
 ---
 
