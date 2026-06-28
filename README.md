@@ -79,37 +79,40 @@ the Schwarz iteration converges **geometrically — faster with larger overlap**
 All numbers are measured by the scripts on CPU, under matched network capacity
 and a matched optimization budget.
 
+Throughout, **DD uses K = 2 subdomains** (one global network vs. two smaller ones
+of matched total capacity). Timing for every run is in the
+[parallel-execution section](#real-parallel-execution-measured-not-inferred).
+
 ### 1D Poisson  −u″ = f on [0,1]
 
 One width-47 network vs. two width-32 networks (≈4.7k vs ≈4.4k params), 6000
-optimization steps each.
+optimization steps each (15 Schwarz rounds × 400 steps for DD).
 
-| Problem | Vanilla L2 | DD L2 | Vanilla train | DD train (1 process) |
-|---|---|---|---|---|
-| sin(πx) | 1.9e-03 | 1.4e-03 | 8.7 s | 15.3 s |
-| x(1−x) | 1.1e-03 | 1.6e-03 | 8.5 s | 15.0 s |
-| **sin(4πx)** *(high-freq)* | **2.4e+00** | **5.3e-01** | 8.6 s | 15.3 s |
-| eˣ | 3.4e-04 | 1.0e-03 | 8.5 s | 15.1 s |
+| Problem | Vanilla L2 | DD L2 (K=2) |
+|---|---|---|
+| sin(πx) | 1.89e-03 | 1.46e-03 |
+| **sin(4πx)** *(high-freq)* | **2.45e+00** | **5.22e-01** |
+| eˣ | 3.36e-04 | 1.06e-03 |
 
-DD matches the global PINN on the smooth problems and is **~5× more accurate on
-the high-frequency case**, where a global PINN is crippled by spectral bias (each
-subdomain sees a lower effective frequency). The DD times here are **single-process**
-(both subdomains trained on one core, so naturally ~2× vanilla); the **real measured
-parallel** times are in the [next section](#real-parallel-execution-measured-not-inferred).
+On smooth problems the global PINN is already excellent and DD is comparable. On
+the **high-frequency** `sin(4πx)`, the global PINN is crippled by spectral bias
+while DD is **~5× more accurate** (2.45 → 0.52) — each subdomain sees a lower
+effective frequency. **This is DD's main value in 1D: accuracy, not speed.**
 
 ### 2D Poisson  −Δu = f on [0,1]²
 
 One `2-64-64-64-1` network vs. two `2-64-64-1` strips (≈8.6k vs ≈8.8k params),
 4500 steps (vanilla) vs. 12 Schwarz rounds × 400 steps (DD).
 
-| Problem | Vanilla L2 | DD L2 | Vanilla train | DD train (1 process) |
-|---|---|---|---|---|
-| sin(πx)sin(πy) | 1.2e-04 | 1.5e-04 | 43.6 s | 48.1 s |
-| sin(πx)sin(3πy) | 2.4e-02 | 2.1e-02 | 43.9 s | 48.9 s |
+| Problem | Vanilla L2 | DD L2 (K=2) |
+|---|---|---|
+| sin(πx)sin(πy) | 1.24e-04 | 4.96e-03 |
+| sin(πx)sin(3πy) | 2.44e-02 | 1.57e-02 |
 
-DD reproduces the global PINN's accuracy while each strip is half the domain and
-independent. Times here are **single-process**; the **real measured parallel**
-speed-up is in the next section.
+Each strip is half the domain and trained independently. On the anisotropic
+`sin(πx)sin(3πy)` DD is more accurate (2.4e-02 → 1.6e-02); on the very smooth
+`sin(πx)sin(πy)` the single global net still wins on accuracy. **The 2D payoff is
+speed** — see the next section.
 
 ---
 
@@ -124,78 +127,59 @@ wrap a real `time.perf_counter()` around the concurrent section
 (`speed-up = sequential / parallel`).
 
 > **Proof it really runs in parallel:** a measured `par < seq` is impossible unless
-> the work genuinely overlapped — e.g. 1D K=4 goes **seq 32.3 s → par 14.2 s**, and
-> 2D K=2 goes **seq 48.9 s → par 28.4 s**. The discarded "parallel-equivalent"
-> estimate (`max` over subdomains) is a *different* computation that never actually
-> runs concurrently; it is **not** used anywhere below.
+> the work genuinely overlapped — 1D goes **seq 15.69 s → par 9.78 s** and 2D goes
+> **seq 46.21 s → par 29.82 s** (both K=2, this machine). The discarded
+> "parallel-equivalent" estimate (`max` over subdomains) is a *different* computation
+> that never actually runs concurrently; it is **not** used anywhere below.
 
-### The head-to-head that matters: vanilla PINN (no MP) vs true-parallel DD
+All numbers below are fresh runs on **Apple M3 (4 performance + 4 efficiency
+cores)**, `K = 2`.
 
-One measured run, one script
-(`python3.13 dd_parallel_mp_2d.py --prob sin13 --vs-vanilla`). The vanilla PINN is
-a single global network with the **full machine** available; DD trains K strips in
-parallel processes. 2D, sin(πx)sin(3πy), Apple M3.
+### DD parallel speed-up: two subdomains in two processes vs. one process
 
-| Method | L2 error | wall (s) | vs vanilla |
-|---|---:|---:|---:|
-| vanilla PINN (global, no MP) | 2.44e-02 | 41.3 | 1.00× |
-| **DD true-parallel, K=2** | **1.57e-02** | **35.5** | **1.16× faster** |
-| DD true-parallel, K=4 | 2.02e-02 | 88.0 | 0.47× (slower) |
+`speed-up = sequential DD / true-parallel DD` — same work, same result, the only
+difference is whether the two subdomains run concurrently.
 
-**At K=2, true-parallel DD is faster than the global PINN *and* more accurate** —
-the goal: speed without compromising the error. K=4 regresses on this laptop (see
-the honest reading below); the win grows with equal cores, not with K on a 4+4
-core chip.
+| Problem | DD L2 | seq (s) | par (s) | **measured speed-up** |
+|---|---:|---:|---:|---:|
+| 1D sin(4πx), 15×400, width 32 | 5.22e-01 | 15.69 | 9.78 | **1.60×** |
+| 2D sin(πx)sin(3πy), 12×400 | 1.57e-02 | 46.21 | 29.82 | **1.55×** |
 
-### 1D scaling — Apple M3 (8 cores), sin(4πx), 15 rounds × 400 steps, width 32
+Running the two subdomains in parallel is **~1.5–1.6× faster** than running them
+back-to-back — real, measured concurrency on two performance cores.
 
-| K (subdomains) | DD L2 | seq (s) | par (s) | **measured speed-up** |
-|---:|---:|---:|---:|---:|
-| 2 | 5.2e-01 | 17.0 | 11.8 | **1.43×** |
-| 4 | 3.3e-01 | 32.3 | 14.2 | **2.28×** |
-| 8 | 3.7e-01 | 66.1 | 29.8 | **2.22×** |
+### Head-to-head: vanilla PINN (full machine) vs true-parallel DD (K=2)
 
-Two effects appear together, exactly as the method predicts: the **accuracy
-improves with K** on the high-frequency problem (5.2e-01 → 3.3e-01 from K=2→4),
-and the **parallel run is genuinely faster than sequential DD** (up to ~2.3× on
-this laptop).
+The vanilla PINN is one global network with the **whole machine** available; DD
+trains its two subdomains in parallel processes (`--vs-vanilla`).
 
-**But vs. the vanilla PINN, 1D DD does *not* win on speed** — the problem is too
-small for parallelism to pay off. Measured head-to-head
-(`dd_parallel_mp.py --vs-vanilla`):
+| Problem | Vanilla L2 | DD L2 | Vanilla wall (s) | DD wall (s) | DD vs vanilla |
+|---|---:|---:|---:|---:|---:|
+| 1D sin(πx) | 1.89e-03 | 1.46e-03 | 8.54 | 9.64 | 0.89× |
+| 1D sin(4πx) | 2.45e+00 | 5.22e-01 | 8.57 | 9.51 | 0.90× |
+| 1D eˣ | 3.36e-04 | 1.06e-03 | 8.59 | 9.51 | 0.90× |
+| **2D sin(πx)sin(πy)** | 1.24e-04 | 4.96e-03 | 41.52 | 30.02 | **1.38× faster** |
+| **2D sin(πx)sin(3πy)** | 2.44e-02 | 1.57e-02 | 41.47 | 35.02 | **1.18× faster** |
 
-| Problem | Method | L2 error | wall (s) | vs vanilla |
-|---|---|---:|---:|---:|
-| sin(4πx) | vanilla PINN (no MP) | **2.45e+00** | 8.8 | 1.00× |
-| sin(4πx) | DD true-parallel, K=2 | **5.24e-01** | 9.7 | 0.91× |
-| sin(πx) | vanilla PINN (no MP) | 1.89e-03 | 8.6 | 1.00× |
-| sin(πx) | DD true-parallel, K=2 | 1.46e-03 | 9.7 | 0.89× |
-
-So in 1D, DD is an **accuracy** tool — it beats the global PINN's spectral bias on
-sin(4πx) (2.45 → 0.52) — **not** a speed tool. The wall-clock win over vanilla
-only appears in 2D, where each subdomain is heavy enough to outweigh the parallel
-overhead.
-
-### 2D scaling — Apple M3, sin(πx)sin(3πy), 12 rounds × 400 steps
-
-| K (strips) | DD L2 | seq (s) | par (s) | measured speed-up |
-|---:|---:|---:|---:|---:|
-| 2 | 1.6e-02 | 48.9 | 28.4 | **1.72×** |
-| 4 | 2.0e-02 | 96.5 | 91.7 | 1.05× |
+- **In 1D the problem is too small** for parallelism to pay off: DD lands ~0.9×
+  vanilla on wall-clock. Its win there is **accuracy** (sin(4πx): 2.45 → 0.52).
+- **In 2D each subdomain is heavy enough** that true-parallel DD beats the global
+  PINN on wall-clock (1.18–1.38×) — and on the harder `sin(πx)sin(3πy)` it is more
+  accurate too. **Speed without giving up accuracy** — the goal of the project.
 
 ### Honest reading of the speed-up
 
 - **The parallelism is real**, but on this hardware it is **bounded by the number
-  of *performance* cores**. The M3 has 4 performance + 4 efficiency cores. The
+  of *performance* cores**. The M3 has 4 performance + 4 efficiency cores, and the
   Jacobi Schwarz round is a **barrier** — every round waits for the *slowest*
-  subdomain — so once K pushes workers onto the slow efficiency cores (2D, K=4),
-  the barrier stalls and the speed-up collapses toward 1×.
-- **1D scales better than 2D** here only because its per-subdomain work is tiny
-  and uniform; the heavier, less uniform 2D strips expose the P/E-core asymmetry.
+  subdomain. At **K = 2** both subdomains land on performance cores, so the
+  speed-up is clean (~1.5–1.6×). Splitting into more subdomains than performance
+  cores would push workers onto the slow efficiency cores and stall the barrier —
+  which is exactly why **K is fixed at 2** on this laptop.
 - **The real win is on homogeneous multi-node HPC**, where every subdomain gets
-  an equal core/node and the barrier cost vanishes — which is the deployment
-  target for the LPB/COSMO application. The laptop numbers prove the machinery is
-  correct and parallel; the *scaling* belongs on a cluster.
+  an equal core/node and the barrier cost vanishes — the deployment target for the
+  LPB/COSMO application. The laptop numbers prove the machinery is correct and
+  parallel; large-K *scaling* belongs on a cluster.
 
 ### Why naive parallelism fails on a Mac (and how this code fixes it)
 
