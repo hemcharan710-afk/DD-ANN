@@ -32,15 +32,67 @@ import torch.nn as nn
 
 # --------------------------------------------------------------------------
 # Problem registry. Keyed by string so it survives 'spawn' pickling.
-# f and the exact solution u for  -u'' = f  on [0,1].
+#
+# pde_type controls the residual in the worker/seq/vanilla:
+#   "poisson"    : -u'' = f                         residual = -u'' - f
+#   "react_diff" : -u'' + lam*u = f                 residual = -u'' + lam*u - f
+#   "adv_diff"   : -eps*u'' + c*u' = f              residual = -eps*u'' + c*u' - f
+#
+# All problems have zero or known Dirichlet BCs at x=0,1 and closed-form
+# exact solutions, so L2 error is always well-defined.
 # --------------------------------------------------------------------------
+
+# ── Poisson  -u'' = f ────────────────────────────────────────────────────
+def _poisson(n):
+    """u = sin(n pi x),  f = (n pi)^2 sin(n pi x)"""
+    return dict(
+        pde_type = "poisson",
+        f = lambda x, n=n: (n * torch.pi) ** 2 * torch.sin(n * torch.pi * x),
+        u = lambda x, n=n: torch.sin(n * torch.pi * x),
+        uL=0.0, uR=0.0,
+    )
+
+# ── Reaction-diffusion  -u'' + lam*u = f  ────────────────────────────────
+# Exact: u = sin(n pi x),  f = (n^2 pi^2 + lam) sin(n pi x)
+def _react_diff(n, lam):
+    return dict(
+        pde_type = "react_diff",
+        lam = float(lam),
+        f   = lambda x, n=n, lam=lam: ((n * torch.pi) ** 2 + lam) * torch.sin(n * torch.pi * x),
+        u   = lambda x, n=n: torch.sin(n * torch.pi * x),
+        uL=0.0, uR=0.0,
+    )
+
+# ── Advection-diffusion  -eps*u'' + c*u' = 0,  u(0)=0, u(1)=1  ──────────
+# Exact: u = (exp(c x / eps) - 1) / (exp(c / eps) - 1)
+# Boundary layer of width ~eps/c near x=1 when eps << c.
+# f = 0 here (homogeneous), BCs are non-trivial.
+def _adv_diff(eps, c):
+    ec = float(np.exp(c / eps))
+    return dict(
+        pde_type = "adv_diff",
+        eps = float(eps),
+        c   = float(c),
+        f   = lambda x: torch.zeros_like(x),
+        u   = lambda x, eps=eps, c=c, ec=ec: (torch.exp(c * x / eps) - 1) / (ec - 1),
+        uL  = 0.0,
+        uR  = 1.0,
+    )
+
 PROBLEMS = {
-    "sin1": dict(f=lambda x: (torch.pi ** 2) * torch.sin(torch.pi * x),
-                 u=lambda x: torch.sin(torch.pi * x), uL=0.0, uR=0.0),
-    "sin4": dict(f=lambda x: (4 * torch.pi) ** 2 * torch.sin(4 * torch.pi * x),
-                 u=lambda x: torch.sin(4 * torch.pi * x), uL=0.0, uR=0.0),
-    "exp":  dict(f=lambda x: -torch.exp(x),
-                 u=lambda x: torch.exp(x), uL=1.0, uR=float(np.exp(1.0))),
+    # --- Poisson ---
+    "sin1":       _poisson(1),
+    "sin4":       _poisson(4),
+    "exp":        dict(pde_type="poisson",
+                       f=lambda x: -torch.exp(x),
+                       u=lambda x: torch.exp(x),
+                       uL=1.0, uR=float(np.exp(1.0))),
+    # --- Reaction-diffusion  -u'' + lam*u = f ---
+    "rd_lam1":    _react_diff(1, 1),     # mild reaction
+    "rd_lam10":   _react_diff(1, 10),    # strong reaction, harder for vanilla
+    # --- Advection-diffusion  -eps*u'' + c*u' = 0 ---
+    "ad_e1e-1":   _adv_diff(0.1,  1.0), # gentle layer
+    "ad_e1e-2":   _adv_diff(0.01, 1.0), # sharp layer — classic PINN failure
 }
 
 
@@ -77,6 +129,26 @@ def second_deriv(u, x):
     return torch.autograd.grad(du, x, torch.ones_like(du), create_graph=True)[0]
 
 
+def first_deriv(u, x):
+    return torch.autograd.grad(u, x, torch.ones_like(u), create_graph=True)[0]
+
+
+def pde_residual(u, x, prob_cfg):
+    """Returns the PDE residual tensor for any supported pde_type."""
+    pde = prob_cfg["pde_type"]
+    f   = prob_cfg["f"]
+    uxx = second_deriv(u, x)
+    if pde == "poisson":
+        return -uxx - f(x)
+    elif pde == "react_diff":
+        return -uxx + prob_cfg["lam"] * u - f(x)
+    elif pde == "adv_diff":
+        ux = first_deriv(u, x)
+        return -prob_cfg["eps"] * uxx + prob_cfg["c"] * ux - f(x)
+    else:
+        raise ValueError(f"Unknown pde_type: {pde}")
+
+
 # --------------------------------------------------------------------------
 # Geometry: split [0,1] into K overlapping subdomains.
 # Subdomain k spans [a_k, b_k]; interior interfaces overlap their neighbours.
@@ -105,7 +177,6 @@ def subdomain_worker(conn, k, cfg):
     torch.set_num_threads(1)                       # avoid core oversubscription
     torch.manual_seed(42 + k)
     prob = PROBLEMS[cfg["prob"]]
-    f = prob["f"]
     a, b = cfg["a"], cfg["b"]
     model = HardPINN(a, b, cfg["width"])
     opt = torch.optim.Adam(model.parameters(), lr=cfg["lr"])
@@ -131,7 +202,7 @@ def subdomain_worker(conn, k, cfg):
         loss = None
         for _ in range(cfg["steps_per"]):
             u = model(x, ua, ub)
-            loss = torch.mean((-second_deriv(u, x) - f(x)) ** 2)
+            loss = torch.mean(pde_residual(u, x, prob) ** 2)
             opt.zero_grad(); loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             opt.step()
@@ -214,7 +285,7 @@ def run_dd_mp(prob="sin1", K=2, overlap=0.2, width=32, n_iter=15,
 def run_dd_seq(prob="sin1", K=4, overlap=0.2, width=32, n_iter=15,
                steps_per=400, n_col=256, lr=1e-3, alpha=1.0):
     torch.set_num_threads(1)
-    p = PROBLEMS[prob]; f = p["f"]
+    p = PROBLEMS[prob]
     a, b, left_q, right_q, edges = make_geometry(K, overlap)
     models, opts, xcs, lqs, rqs = [], [], [], [], []
     for k in range(K):
@@ -235,7 +306,7 @@ def run_dd_seq(prob="sin1", K=4, overlap=0.2, width=32, n_iter=15,
             x = xcs[k].clone().detach().requires_grad_(True)
             for _ in range(steps_per):
                 u = models[k](x, ua, ub)
-                loss = torch.mean((-second_deriv(u, x) - f(x)) ** 2)
+                loss = torch.mean(pde_residual(u, x, p) ** 2)
                 opts[k].zero_grad(); loss.backward()
                 torch.nn.utils.clip_grad_norm_(models[k].parameters(), 1.0)
                 opts[k].step()
@@ -253,14 +324,15 @@ def run_vanilla(prob="sin4", width=47, steps=6000, n_col=256, lr=1e-3):
     """One global PINN on all of [0,1] — single network, NO multiprocessing.
     Gets the full machine (threads unpinned). This is the baseline DD must beat."""
     torch.manual_seed(42)
-    p = PROBLEMS[prob]; f = p["f"]
+    p = PROBLEMS[prob]
     m = HardPINN(0.0, 1.0, width)
     ua = torch.tensor([[p["uL"]]]); ub = torch.tensor([[p["uR"]]])
     opt = torch.optim.Adam(m.parameters(), lr=lr)
     t0 = time.perf_counter()
     for _ in range(steps):
         x = torch.rand(n_col, 1, requires_grad=True)
-        loss = torch.mean((-second_deriv(m(x, ua, ub), x) - f(x)) ** 2)
+        u_v = m(x, ua, ub)
+        loss = torch.mean(pde_residual(u_v, x, p) ** 2)
         opt.zero_grad(); loss.backward(); opt.step()
     wall = time.perf_counter() - t0
     xt = torch.linspace(0, 1, 2000).view(-1, 1)

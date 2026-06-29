@@ -70,6 +70,22 @@ coupling. With **overlap**, each subdomain reads its interface value from the
 **neighbour's interior**, a genuine PDE value, and the Schwarz iteration
 converges geometrically (faster with larger overlap).
 
+### How the interface value is transmitted
+
+The two phases couple neighbouring subdomains differently — both Jacobi, both
+fully parallel:
+
+- **1D — exact (hard) injection.** The neighbour's interior value is fed in as the
+  subdomain's Dirichlet datum through the lift term, so the interface condition
+  holds by construction each round.
+- **2D — soft transmission penalty.** Each strip adds a least-squares term
+  $w\,\lVert N_\theta(\text{interface}) - \text{neighbour profile}\rVert^2$
+  (weight $w = 300$) that pulls its solution toward the neighbour's frozen profile
+  along the shared line $x=\text{const}$.
+
+In both phases the *outer-box* Dirichlet conditions are still imposed exactly
+through the distance-function ansatz; only the *internal* interface differs.
+
 ---
 
 ## Problem set
@@ -104,12 +120,19 @@ Throughout, decomposition uses **$K = 2$ subdomains**.
 ```
 DD-ANN/
 ├── Phase1_PINN_1D/
-│   └── dd_parallel_mp.py        # 1D Poisson: vanilla PINN, DD-PINN, true-parallel DD
+│   ├── dd_parallel_mp.py        # 1D: vanilla PINN, DD-PINN, true-parallel DD
+│   └── run_all_1d.py            # sweep every 1D problem through all three methods
 ├── Phase2_PINN_2D/
-│   └── dd_parallel_mp_2d.py     # 2D Poisson: vanilla PINN, DD-PINN (strips), true-parallel DD
+│   ├── dd_parallel_mp_2d.py     # 2D: vanilla PINN, DD-PINN (strips), true-parallel DD
+│   └── run_all_problems.py      # sweep every 2D problem through all three methods
 ├── References/                  # key reference papers
 └── README.md
 ```
+
+The core scripts also carry extra problem families beyond those reported here —
+1D reaction-diffusion and advection-diffusion, 2D anisotropic Poisson and
+Helmholtz — used for stress-testing. The headline tables stay focused on the
+cases both methods actually solve.
 
 Each script is **self-contained**: it implements the vanilla PINN, the
 decomposed PINN, a single-process baseline, and the true-parallel solver, then
@@ -176,8 +199,8 @@ an honest, measured ratio of identical work — not an estimate.
 
 | Problem | DD $L_2$ | Sequential (s) | Parallel (s) | **Speed-up** |
 |---|---:|---:|---:|---:|
-| 1D $\sin(4\pi x)$ | 5.22e-01 | 15.69 | 9.78 | **1.60×** |
-| 2D $\sin(\pi x)\sin(3\pi y)$ | 1.57e-02 | 46.21 | 29.82 | **1.55×** |
+| 1D $\sin(4\pi x)$ | 5.22e-01 | 15.62 | 9.63 | **1.62×** |
+| 2D $\sin(\pi x)\sin(3\pi y)$ | 1.57e-02 | 44.66 | 27.49 | **1.62×** |
 
 Running the subdomains in parallel is **≈1.5–1.6× faster** than running them
 back-to-back, confirming genuine concurrency across two performance cores.
@@ -189,19 +212,52 @@ available, versus decomposition training its two subdomains in parallel processe
 
 | Problem | Vanilla $L_2$ | DD $L_2$ | Vanilla (s) | DD (s) | **DD vs. vanilla** |
 |---|---:|---:|---:|---:|---:|
-| 1D $\sin(\pi x)$ | 1.89e-03 | 1.46e-03 | 8.54 | 9.64 | 0.89× |
-| 1D $\sin(4\pi x)$ | 2.45e+00 | 5.22e-01 | 8.57 | 9.51 | 0.90× |
-| 1D $e^{x}$ | 3.36e-04 | 1.06e-03 | 8.59 | 9.51 | 0.90× |
-| **2D $\sin(\pi x)\sin(\pi y)$** | 1.24e-04 | 4.96e-03 | 41.52 | 30.02 | **1.38×** |
-| **2D $\sin(\pi x)\sin(3\pi y)$** | 2.44e-02 | 1.57e-02 | 41.47 | 35.02 | **1.18×** |
+| 1D $\sin(\pi x)$ | 1.89e-03 | 1.46e-03 | 9.67 | 9.85 | 0.98× |
+| 1D $\sin(4\pi x)$ | 2.45e+00 | 5.22e-01 | 8.52 | 9.09 | 0.94× |
+| 1D $e^{x}$ | 3.36e-04 | 1.06e-03 | 8.37 | 9.04 | 0.93× |
+| **2D $\sin(\pi x)\sin(\pi y)$** | 1.24e-04 | 4.96e-03 | 42.48 | 29.65 | **1.43×** |
+| **2D $\sin(\pi x)\sin(3\pi y)$** | 2.44e-02 | 1.57e-02 | 49.06 | 27.49 | **1.78×** |
 
-- **1D** problems are too small for parallelism to pay off (DD ≈0.9× vanilla on
+- **1D** problems are too small for parallelism to pay off (DD ≈0.9–1.0× vanilla on
   wall-clock); decomposition wins on **accuracy** instead.
 - **2D** subdomains are heavy enough that true-parallel DD is **faster** than the
-  global PINN (1.18–1.38×) — and on the harder $\sin(\pi x)\sin(3\pi y)$ it is more
+  global PINN (1.43–1.78×) — and on the harder $\sin(\pi x)\sin(3\pi y)$ it is more
   accurate too. This is the project goal: **speed without sacrificing accuracy.**
+- The wall-clock speed-up was **consistent across every 2D problem** swept (1.4–1.8×
+  on all four Poisson cases plus three Helmholtz cases); it is a property of the
+  parallel decomposition, not of any one solution. The accuracy advantage, by
+  contrast, is problem-dependent — see *Discussion*.
 
 ### Discussion
+
+**Decomposition direction matters.** The 2D strips split the domain in $x$, so the
+soft interface coupling fares best when the solution's fast variation runs
+*along* the interfaces (in $y$) rather than *across* them. On
+$\sin(\pi x)\sin(3\pi y)$ — fast in $y$, parallel to the cuts — decomposition is
+more accurate than the global PINN; on the mirror case $\sin(3\pi x)\sin(\pi y)$ —
+fast in $x$, cutting straight across the strips — accuracy degrades sharply. The
+natural fixes are to align the cut with the low-frequency axis or to decompose in
+both directions. (Speed is unaffected either way — the decomposition is parallel
+regardless of which case is solved.)
+
+**Why the 1D speed-up is overhead-bound.** The 1D subdomains are below parity
+(DD ≈0.9–1.0× vanilla) not because the parallelism fails but because the
+per-subdomain work is too small to cover the fixed cost of decomposition —
+process spawn, one interface exchange per Schwarz round, and the single-thread
+pin on each worker. That cost is essentially constant, so the speed-up improves
+as the network grows. Holding the problem fixed at $\sin(4\pi x)$ and scaling the
+network depth (matched 6000-step budget) makes this explicit:
+
+| Network depth | Vanilla params | DD params ($K{=}2$) | **DD vs. vanilla** |
+|---|---:|---:|---:|
+| 3 *(reported above)* | 4 654 | 4 418 | 0.94× |
+| 5 | 9 166 | 8 642 | 0.99× |
+| 8 | 15 934 | 14 978 | **1.06×** |
+
+The ratio rises monotonically and crosses parity once the subdomains are heavy
+enough. This is the same effect that puts 2D — where each strip carries a
+genuinely larger workload — comfortably above parity, and it confirms that the
+right lever for a wall-clock win is *more* work per subdomain, not less.
 
 The measured parallelism is real but, on a laptop, bounded by the number of
 **performance cores**. The Schwarz round is a synchronization **barrier** — each
@@ -234,6 +290,10 @@ python3.13 Phase2_PINN_2D/dd_parallel_mp_2d.py --prob sin13 --Ks 2
 
 # 2D — vanilla PINN vs. true-parallel DD, head-to-head
 python3.13 Phase2_PINN_2D/dd_parallel_mp_2d.py --prob sin13 --vs-vanilla
+
+# sweep every problem (vanilla + sequential DD + true-parallel DD) in one table
+python3.13 Phase1_PINN_1D/run_all_1d.py       --Ks 2
+python3.13 Phase2_PINN_2D/run_all_problems.py --Ks 2
 ```
 
 Each script prints its own measured table for the host machine, so absolute
