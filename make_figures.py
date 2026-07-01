@@ -22,7 +22,9 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-# pull the building blocks straight from your solver
+# pull the building blocks straight from your solver (Phase 1 module)
+import os, sys
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "Phase1_PINN_1D"))
 from dd_parallel_mp import PROBLEMS, HardPINN, pde_residual, run_dd_mp, run_vanilla
 
 plt.rcParams.update({"font.family": "serif", "font.size": 12})
@@ -81,31 +83,41 @@ def figure1():
 SPEEDUP = {
     "1D": {"sin(\u03c0x)": 0.98, "sin(4\u03c0x)": 0.94, "e\u02e3": 0.93},
     "2D": {"sin11": 1.43, "sin13": 1.78, "sin31": 1.58, "sin33": 1.43},
+    "3D": {"Poisson": 1.24, "LPB": 1.36, "COSMO": 1.29},
+}
+GROUP_COLOR   = {"1D": STEEL, "2D": NAVY, "3D": DD}
+GROUP_CAPTION = {
+    "1D": "1D  (subdomains too small)",
+    "2D": "2D  (above parity, 1.43\u00d7\u20131.78\u00d7)",
+    "3D": "3D  (above parity, 1.24\u00d7\u20131.36\u00d7)",
 }
 
 
 def figure2():
-    labels = list(SPEEDUP["1D"]) + list(SPEEDUP["2D"])
-    vals   = list(SPEEDUP["1D"].values()) + list(SPEEDUP["2D"].values())
-    colors = [STEEL] * len(SPEEDUP["1D"]) + [NAVY] * len(SPEEDUP["2D"])
-    n1 = len(SPEEDUP["1D"])
+    groups = ["1D", "2D", "3D"]
+    labels, vals, colors, spans = [], [], [], []
+    for g in groups:
+        start = len(vals)
+        for k, v in SPEEDUP[g].items():
+            labels.append(k); vals.append(v); colors.append(GROUP_COLOR[g])
+        spans.append((g, start, len(vals)))          # [start, end) per group
 
-    fig, ax = plt.subplots(figsize=(8.2, 4.3), dpi=200)
-    x = range(len(vals))
-    ax.bar(x, vals, color=colors, width=0.66, edgecolor="white", lw=0.6, zorder=3)
+    fig, ax = plt.subplots(figsize=(11.0, 4.6), dpi=200)
+    x = list(range(len(vals)))
+    ax.bar(x, vals, color=colors, width=0.68, edgecolor="white", lw=0.6, zorder=3)
     ax.axhline(1.0, ls="--", lw=1.3, color="#555555", zorder=2)
     ax.text(len(vals) - 0.45, 1.005, "parity (1.00\u00d7)", ha="right", va="bottom",
             fontsize=10, color="#555555", style="italic")
     for xi, v in zip(x, vals):
         ax.text(xi, v + 0.02, f"{v:.2f}\u00d7", ha="center", va="bottom",
-                fontsize=10.5, color=NAVY if v >= 1 else "#5a6b80", fontweight="bold")
-    ax.axvline(n1 - 0.5, color="#cccccc", lw=1.0, zorder=1)
-    ax.text((n1 - 1) / 2, -0.20, "1D  (subdomains too small)", ha="center", va="top",
-            fontsize=11, color="#5a6b80", transform=ax.get_xaxis_transform())
-    ax.text((n1 + len(vals) - 1) / 2, -0.20, "2D  (above parity, 1.43\u00d7\u20131.78\u00d7)",
-            ha="center", va="top", fontsize=11, color=NAVY,
-            transform=ax.get_xaxis_transform())
-    ax.set_xticks(list(x)); ax.set_xticklabels(labels)
+                fontsize=10, color=NAVY if v >= 1 else "#5a6b80", fontweight="bold")
+    for g, s, e in spans:
+        if s > 0:
+            ax.axvline(s - 0.5, color="#cccccc", lw=1.0, zorder=1)
+        ax.text((s + e - 1) / 2, -0.20, GROUP_CAPTION[g], ha="center", va="top",
+                fontsize=10.5, color=("#5a6b80" if g == "1D" else GROUP_COLOR[g]),
+                transform=ax.get_xaxis_transform())
+    ax.set_xticks(x); ax.set_xticklabels(labels)
     ax.set_ylabel("DD speed-up vs. global PINN  (\u00d7)")
     ax.set_ylim(0, 2.0)
     ax.set_title("Measured wall-clock speed-up of true-parallel DD over the global PINN",

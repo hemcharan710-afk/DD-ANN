@@ -219,8 +219,9 @@ $$\text{speed-up} = \frac{\text{sequential DD (one process)}}{\text{true-paralle
 |---|---:|---:|---:|---:|
 | 1D $\sin(4\pi x)$ | 5.22e-01 | 15.62 | 9.63 | **1.62×** |
 | 2D $\sin(\pi x)\sin(3\pi y)$ | 1.57e-02 | 44.66 | 27.49 | **1.62×** |
+| 3D Poisson | 1.55e-02 | 59.53 | 43.18 | **1.38×** |
 
-![Wall-clock speed-up of true-parallel DD over global PINN across all 2D problems](figure2_speedup.png)
+![Wall-clock speed-up of true-parallel DD over the global PINN across all 1D, 2D, and 3D problems](figure2_speedup.png)
 
 ---
 
