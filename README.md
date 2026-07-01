@@ -166,7 +166,7 @@ Network capacity is matched across methods: in 1D a width-47 global network (~4.
 
 On `sin4`, decomposition is **~5× more accurate** — the global PINN is crippled by spectral bias while each subdomain sees a lower effective frequency. **In 1D, the value of decomposition is accuracy.**
 
-![Spectral bias: DD-PINN vs vanilla on high-frequency solution](figure1_spectral_bias.png)
+![Spectral bias: DD-PINN vs vanilla on high-frequency solution](figure2_spectral_bias.png)
 
 **Table 2.** *1D vanilla PINN vs. true-parallel DD (capacity-matched).*
 
