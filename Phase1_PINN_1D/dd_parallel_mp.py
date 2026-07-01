@@ -3,8 +3,7 @@ Real multiprocess (true-parallel) overlapping-Schwarz DD-PINN in 1D.
 
 Why this file exists
 --------------------
-The notebooks report a *parallel-equivalent* DD time = max(subdomain times),
-which is the standard way to report DD speed-up. This module instead executes
+This module instead executes
 the subdomains **genuinely in parallel**, one OS process per subdomain, so the
 wall-clock speed-up is measured, not inferred.
 

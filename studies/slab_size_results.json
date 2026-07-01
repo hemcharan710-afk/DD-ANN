@@ -1,0 +1,449 @@
+{
+  "1D": {
+    "dim": "1D",
+    "matched_width": 32,
+    "vanilla_dims": [
+      1,
+      47,
+      47,
+      47,
+      1
+    ],
+    "vanilla_params": 4654,
+    "problems": {
+      "sin1": {
+        "vanilla_l2": 0.001891045249067247,
+        "vanilla_wall": 9.113563499995507,
+        "rows": [
+          {
+            "width": 32,
+            "params": 2209,
+            "params_total": 4418,
+            "l2": 0.001457361737266183,
+            "par": 10.211628874996677,
+            "speedup": 0.8924691262830948,
+            "matched": true
+          },
+          {
+            "width": 24,
+            "params": 1273,
+            "params_total": 2546,
+            "l2": 0.001339806243777275,
+            "par": 9.591827583994018,
+            "speedup": 0.9501383777168185,
+            "matched": false
+          },
+          {
+            "width": 16,
+            "params": 593,
+            "params_total": 1186,
+            "l2": 0.0013942732475697994,
+            "par": 8.95031579201168,
+            "speedup": 1.0182393238157619,
+            "matched": false
+          },
+          {
+            "width": 12,
+            "params": 349,
+            "params_total": 698,
+            "l2": 0.0015026802429929376,
+            "par": 8.652519499999471,
+            "speedup": 1.0532843641665373,
+            "matched": false
+          },
+          {
+            "width": 8,
+            "params": 169,
+            "params_total": 338,
+            "l2": 0.0014860874507576227,
+            "par": 8.045591458998388,
+            "speedup": 1.1327400286777765,
+            "matched": false
+          }
+        ]
+      },
+      "sin4": {
+        "vanilla_l2": 2.447246789932251,
+        "vanilla_wall": 8.333976000008988,
+        "rows": [
+          {
+            "width": 32,
+            "params": 2209,
+            "params_total": 4418,
+            "l2": 0.5215487480163574,
+            "par": 9.571214416995645,
+            "speedup": 0.8707333925369296,
+            "matched": true
+          },
+          {
+            "width": 24,
+            "params": 1273,
+            "params_total": 2546,
+            "l2": 0.5356064438819885,
+            "par": 9.193502541995258,
+            "speedup": 0.9065071730757658,
+            "matched": false
+          },
+          {
+            "width": 16,
+            "params": 593,
+            "params_total": 1186,
+            "l2": 0.5487505793571472,
+            "par": 8.462770334008383,
+            "speedup": 0.9847810670836921,
+            "matched": false
+          },
+          {
+            "width": 12,
+            "params": 349,
+            "params_total": 698,
+            "l2": 0.5563896894454956,
+            "par": 9.562689208003576,
+            "speedup": 0.8715096578725777,
+            "matched": false
+          },
+          {
+            "width": 8,
+            "params": 169,
+            "params_total": 338,
+            "l2": 0.5702478885650635,
+            "par": 7.834192083013477,
+            "speedup": 1.06379520845285,
+            "matched": false
+          }
+        ]
+      },
+      "exp": {
+        "vanilla_l2": 0.000335850432747975,
+        "vanilla_wall": 8.469428750002407,
+        "rows": [
+          {
+            "width": 32,
+            "params": 2209,
+            "params_total": 4418,
+            "l2": 0.0010649843607097864,
+            "par": 11.378944875003072,
+            "speedup": 0.7443070375187244,
+            "matched": true
+          },
+          {
+            "width": 24,
+            "params": 1273,
+            "params_total": 2546,
+            "l2": 0.0010178700322285295,
+            "par": 9.308303375000833,
+            "speedup": 0.909878890792131,
+            "matched": false
+          },
+          {
+            "width": 16,
+            "params": 593,
+            "params_total": 1186,
+            "l2": 0.001272900844924152,
+            "par": 8.181193124997662,
+            "speedup": 1.0352314901507507,
+            "matched": false
+          },
+          {
+            "width": 12,
+            "params": 349,
+            "params_total": 698,
+            "l2": 0.0010216160444542766,
+            "par": 10.844476540994947,
+            "speedup": 0.780990093711371,
+            "matched": false
+          },
+          {
+            "width": 8,
+            "params": 169,
+            "params_total": 338,
+            "l2": 0.0009938495932146907,
+            "par": 7.987378374993568,
+            "speedup": 1.060351513647834,
+            "matched": false
+          }
+        ]
+      }
+    }
+  },
+  "2D": {
+    "dim": "2D",
+    "matched_width": 64,
+    "vanilla_dims": [
+      2,
+      64,
+      64,
+      64,
+      1
+    ],
+    "vanilla_params": 8577,
+    "problems": {
+      "sin11": {
+        "vanilla_l2": 0.0001237116812262684,
+        "vanilla_wall": 38.53775416700228,
+        "rows": [
+          {
+            "width": 64,
+            "params": 4417,
+            "params_total": 8834,
+            "l2": 0.004956044520306274,
+            "par": 27.616842834002455,
+            "speedup": 1.3954438745457811,
+            "matched": true
+          },
+          {
+            "width": 48,
+            "params": 2545,
+            "params_total": 5090,
+            "l2": 0.005022655784638645,
+            "par": 21.619517667000764,
+            "speedup": 1.7825445858963305,
+            "matched": false
+          },
+          {
+            "width": 32,
+            "params": 1185,
+            "params_total": 2370,
+            "l2": 0.005060984572303513,
+            "par": 16.356700083008036,
+            "speedup": 2.3560836826149774,
+            "matched": false
+          },
+          {
+            "width": 20,
+            "params": 501,
+            "params_total": 1002,
+            "l2": 0.005045271762790747,
+            "par": 14.592013457993744,
+            "speedup": 2.64101690133041,
+            "matched": false
+          }
+        ]
+      },
+      "sin13": {
+        "vanilla_l2": 0.024389581754803658,
+        "vanilla_wall": 43.84284095800831,
+        "rows": [
+          {
+            "width": 64,
+            "params": 4417,
+            "params_total": 8834,
+            "l2": 0.015693267925932657,
+            "par": 31.7939822920016,
+            "speedup": 1.3789666407733339,
+            "matched": true
+          },
+          {
+            "width": 48,
+            "params": 2545,
+            "params_total": 5090,
+            "l2": 0.017467692369740252,
+            "par": 22.219662290997803,
+            "speedup": 1.9731551444762976,
+            "matched": false
+          },
+          {
+            "width": 32,
+            "params": 1185,
+            "params_total": 2370,
+            "l2": 0.017524725318864152,
+            "par": 16.41794408399437,
+            "speedup": 2.670422114590468,
+            "matched": false
+          },
+          {
+            "width": 20,
+            "params": 501,
+            "params_total": 1002,
+            "l2": 0.029331013368608695,
+            "par": 14.771342584004742,
+            "speedup": 2.9681012886048594,
+            "matched": false
+          }
+        ]
+      },
+      "sin33": {
+        "vanilla_l2": 0.17122969031333923,
+        "vanilla_wall": 38.759974917004,
+        "rows": [
+          {
+            "width": 64,
+            "params": 4417,
+            "params_total": 8834,
+            "l2": 0.1847645549419864,
+            "par": 33.393845083002816,
+            "speedup": 1.1606921820671827,
+            "matched": true
+          },
+          {
+            "width": 48,
+            "params": 2545,
+            "params_total": 5090,
+            "l2": 0.18904361466784547,
+            "par": 34.37494225001137,
+            "speedup": 1.1275648009849726,
+            "matched": false
+          },
+          {
+            "width": 32,
+            "params": 1185,
+            "params_total": 2370,
+            "l2": 0.8134674665272856,
+            "par": 26.875385707986425,
+            "speedup": 1.4422109263155949,
+            "matched": false
+          },
+          {
+            "width": 20,
+            "params": 501,
+            "params_total": 1002,
+            "l2": 0.8413431135750076,
+            "par": 15.767426333011827,
+            "speedup": 2.458230918501475,
+            "matched": false
+          }
+        ]
+      }
+    }
+  },
+  "3D": {
+    "dim": "3D",
+    "matched_width": 64,
+    "vanilla_dims": [
+      3,
+      64,
+      64,
+      64,
+      1
+    ],
+    "vanilla_params": 8641,
+    "problems": {
+      "pois_111": {
+        "vanilla_l2": 0.001612350344657898,
+        "vanilla_wall": 56.11882862499624,
+        "rows": [
+          {
+            "width": 64,
+            "params": 4481,
+            "params_total": 8962,
+            "l2": 0.015539839549230305,
+            "par": 46.19834579099552,
+            "speedup": 1.2147367544041872,
+            "matched": true
+          },
+          {
+            "width": 48,
+            "params": 2593,
+            "params_total": 5186,
+            "l2": 0.01745323378734996,
+            "par": 32.58699479200004,
+            "speedup": 1.7221234723606105,
+            "matched": false
+          },
+          {
+            "width": 32,
+            "params": 1217,
+            "params_total": 2434,
+            "l2": 0.050892508874223134,
+            "par": 25.58883183299622,
+            "speedup": 2.1930984966899616,
+            "matched": false
+          },
+          {
+            "width": 20,
+            "params": 521,
+            "params_total": 1042,
+            "l2": 0.17241186409869416,
+            "par": 17.1749176250014,
+            "speedup": 3.267487498356585,
+            "matched": false
+          }
+        ]
+      },
+      "lpb_k3": {
+        "vanilla_l2": 0.02681579627096653,
+        "vanilla_wall": 61.892155125009594,
+        "rows": [
+          {
+            "width": 64,
+            "params": 4481,
+            "params_total": 8962,
+            "l2": 0.034262743018443995,
+            "par": 48.47539816600329,
+            "speedup": 1.2767745591910524,
+            "matched": true
+          },
+          {
+            "width": 48,
+            "params": 2593,
+            "params_total": 5186,
+            "l2": 0.05088699771755553,
+            "par": 32.785789625006146,
+            "speedup": 1.887773813988108,
+            "matched": false
+          },
+          {
+            "width": 32,
+            "params": 1217,
+            "params_total": 2434,
+            "l2": 0.1416481575532106,
+            "par": 25.647093041989137,
+            "speedup": 2.4132230122018288,
+            "matched": false
+          },
+          {
+            "width": 20,
+            "params": 521,
+            "params_total": 1042,
+            "l2": 0.31750022269961986,
+            "par": 18.060375040993677,
+            "speedup": 3.4269584648450526,
+            "matched": false
+          }
+        ]
+      },
+      "cosmo_mid": {
+        "vanilla_l2": 0.03162970393896103,
+        "vanilla_wall": 55.7833216250001,
+        "rows": [
+          {
+            "width": 64,
+            "params": 4481,
+            "params_total": 8962,
+            "l2": 0.035322521044508795,
+            "par": 61.71039741698769,
+            "speedup": 0.903953368636774,
+            "matched": true
+          },
+          {
+            "width": 48,
+            "params": 2593,
+            "params_total": 5186,
+            "l2": 0.0518270759733747,
+            "par": 38.87220875000639,
+            "speedup": 1.4350437862626193,
+            "matched": false
+          },
+          {
+            "width": 32,
+            "params": 1217,
+            "params_total": 2434,
+            "l2": 0.14314254996233108,
+            "par": 24.309712375004892,
+            "speedup": 2.2946927863431323,
+            "matched": false
+          },
+          {
+            "width": 20,
+            "params": 521,
+            "params_total": 1042,
+            "l2": 0.3240289195838655,
+            "par": 18.98849745800544,
+            "speedup": 2.9377427965729943,
+            "matched": false
+          }
+        ]
+      }
+    }
+  }
+}
